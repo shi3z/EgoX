@@ -70,27 +70,53 @@ Download the trained EgoX LoRA weights from [Google Drive](https://drive.google.
 
 ## 🚀 Inference
 
-### File Structure
+### Quick Start with Example Data
 
-Prepare your data files in the following structure:
-
-```
-example/
-├── in_the_wild/          # or ego4D/
-│   ├── caption.txt              # Text prompts (one per line)
-│   ├── exo_gt_path.txt         # Exocentric video paths (one per line)
-│   ├── ego_prior_path.txt      # Egocentric prior video paths (one per line)
-│   ├── camera_params.json      # Camera parameters
-│   └── depth_maps/             # Depth maps directory
-```
-
-### Run Inference
+For quick testing, the codebase includes example data in the `example/` directory. You can run inference immediately:
 
 ```bash
-bash scripts/infer.sh
+# For in-the-wild example
+bash scripts/infer_itw.sh
+
+# For Ego4D example
+bash scripts/infer_ego4d.sh
 ```
 
-Edit `scripts/infer.sh` to configure GPU ID, seed, and data paths. Comment/uncomment the relevant section for in-the-wild or Ego4D inference.
+Edit the GPU ID and seed in the script if needed. Results will be saved to `./results/`.
+
+### Custom Data Inference
+
+To run inference with your own data, prepare the following file structure:
+
+```
+your_dataset/              # Your custom dataset folder
+├── caption.txt            # Text prompts (one per line)
+├── exo_gt_path.txt        # Exocentric video paths (one per line)
+├── ego_prior_path.txt     # Egocentric prior video paths (one per line)
+├── camera_params.json     # Camera parameters
+└── depth_maps/            # Depth maps directory
+    └── take_name/
+        ├── frame_000.npy
+        └── ...
+```
+
+Then, modify `scripts/infer.sh` (or create a new script) to point to your data paths:
+
+```bash
+python3 infer.py \
+    --prompt ./example/your_dataset/caption.txt \
+    --exo_video_path ./example/your_dataset/exo_gt_path.txt \
+    --ego_prior_video_path ./example/your_dataset/ego_prior_path.txt \
+    --meta_data_file ./example/your_dataset/camera_params.json \
+    --depth_root ./example/your_dataset/depth_maps/ \
+    --sft_path ./Wan2.1-I2V-14B-480P-Diffusers/transformer \
+    --lora_path ./results/pytorch_lora_weights.safetensors \
+    --lora_rank 256 \
+    --out ./results \
+    --seed 846514 \
+    --use_GGA \
+    --cos_sim_scaling_factor 3.0
+```
 
 ## 📝 Citation
 
