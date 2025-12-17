@@ -62,7 +62,7 @@ def main(args):
     for ego_filename, meta in enumerate(meta_data):
         if i >= len(exo_videos):
             break
-        take_name = str(meta['path'].split('/')[-1]).split('.')[0]
+        take_name = exo_videos[i].split('/')[-2]
         i += 1
         depth_map_paths.append(Path(os.path.join(depth_root, take_name)))
         depth_intrinsic = np.array([[1238.9679415422443, 0.0, 1920.0], [0.0, 1238.9679415422443, 1080.0], [0.0, 0.0, 1.0]])
@@ -90,8 +90,8 @@ def main(args):
 
     image_encoder = CLIPVisionModel.from_pretrained(model_path, subfolder="image_encoder", torch_dtype=torch.float32)
 
-    from core.finetune.models.wan_i2v.sft_trainer import WanHBHImageToVideoPipeline
-    pipe = WanHBHImageToVideoPipeline.from_pretrained(model_path, image_encoder=image_encoder, transformer=transformer, torch_dtype=dtype)
+    from core.finetune.models.wan_i2v.sft_trainer import WanWidthConcatImageToVideoPipeline
+    pipe = WanWidthConcatImageToVideoPipeline.from_pretrained(model_path, image_encoder=image_encoder, transformer=transformer, torch_dtype=dtype)
     
     if lora_path:
         print('loading lora')
@@ -158,8 +158,9 @@ def main(args):
             pixel_coords_cv = pixel_coords[..., :2].cpu().numpy().reshape(-1, 1, 2).astype(np.float32)
             K = scaled_intrinsic.cpu().numpy().astype(np.float32)
             import cv2
+            #! Ego cam distorion coeffs (Project Aria) - Hard coded
             distortion_coeffs = np.array([[-0.02340373583137989,0.09388021379709244,-0.06088035926222801,0.0053304750472307205,0.003342868760228157,-0.0006356257363222539,0.0005087381578050554,-0.0004747129278257489,-0.0011330085108056664,-0.00025734835071489215,0.00009328465239377692,0.00009424977179151028]])
-            D = distortion_coeffs.astype(np.float32) # 예: [k1, k2, k3, k4]
+            D = distortion_coeffs.astype(np.float32) # ex: [k1, k2, k3, k4, k5, k6, p1, p2, s1, s2, s3, s4]
             normalized_points = cv2.undistortPoints(pixel_coords_cv, K, D, R=np.eye(3), P=np.eye(3))
 
 
@@ -294,8 +295,6 @@ if __name__ == "__main__":
     parser.add_argument("--idx", type=int, default=-1)
     parser.add_argument("--sft_path", type=str, default=None, help="The path of the SFT weights to be used")
     parser.add_argument("--out", type=str, default="/outputs", help="The path save generated video")
-    parser.add_argument("--mode", type=str, default="xyz", help="xyz or xzyrgb")
-    parser.add_argument("--type", type=str, default="i2vhbh", help="i2dpm or condpm-i2dpm")
     parser.add_argument("--lora_path", type=str, default=None, help="The path of the LoRA weights to be used")
     parser.add_argument("--lora_rank", type=int, default=64, help="The rank of the LoRA weights to be used")
     parser.add_argument("--meta_data_file", type=str, default=None, help="meta data for GGA")
@@ -306,5 +305,6 @@ if __name__ == "__main__":
     parser.add_argument("--start_idx", type=int, default=-1)
     parser.add_argument("--end_idx", type=int, default=-1)
     parser.add_argument("--depth_root", type=str, default="./example/in_the_wild/depth_maps/", help="root path for depth maps")
+    parser.add_argument("--in_the_wild", action='store_true', help="whether to use in-the-wild inference")
     args = parser.parse_args()
     main(args)

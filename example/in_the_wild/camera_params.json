@@ -1,9 +1,7 @@
 {
     "test_datasets": [
         {
-            "path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/inthewild_dataset/videos_49_crop16_downsampled/joker.mp4",
-            "ego_prior_path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/inthewild_dataset/ego_prior_videos/joker.mp4",
-            "vipe_path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/vipe_results/joker_moge_static_vda_fixedcam_slammap",
+            "path": "./example/in_the_wild/exo_videos/joker.mp4",
             "best_camera": "none",
             "source_frame_start": 0,
             "source_frame_end": 48,
@@ -1045,9 +1043,7 @@
             ]
         },
         {
-            "path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/inthewild_dataset/videos_49_crop16_downsampled/ironman.mp4",
-            "ego_prior_path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/inthewild_dataset/ego_prior_videos/ironman.mp4",
-            "vipe_path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/vipe_results/ironman_moge_static_vda_fixedcam_slammap",
+            "path": "./example/in_the_wild/exo_videos/ironman.mp4",
             "best_camera": "none",
             "source_frame_start": 0,
             "source_frame_end": 48,
@@ -2089,9 +2085,7 @@
             ]
         },
         {
-            "path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/inthewild_dataset/videos_49_crop16_downsampled/hulk_blackwidow.mp4",
-            "ego_prior_path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/inthewild_dataset/ego_prior_videos/hulk_blackwidow.mp4",
-            "vipe_path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/vipe_results/hulk_blackwidow_moge_static_vda_fixedcam_slammap",
+            "path": "./example/in_the_wild/exo_videos/hulk_blackwidow.mp4",
             "best_camera": "none",
             "source_frame_start": 0,
             "source_frame_end": 48,
@@ -2398,9 +2392,7 @@
             ]
         },
         {
-            "path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/inthewild_dataset/videos_49_crop16_downsampled/tabletennis.mp4",
-            "ego_prior_path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/inthewild_dataset/ego_prior_videos/tabletennis.mp4",
-            "vipe_path": "/home/nas_main/taewoongkang/dohyeon/Exo-to-Ego/Ego-Renderer-from-ViPE/vipe_results/tabletennis_moge_static_vda_fixedcam_slammap",
+            "path": "./example/in_the_wild/exo_videos/tabletennis.mp4",
             "best_camera": "none",
             "source_frame_start": 0,
             "source_frame_end": 48,

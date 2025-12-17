@@ -93,7 +93,7 @@ def retrieve_latents(
     else:
         raise AttributeError("Could not access latents of provided encoder_output")
 
-class WanHBHImageToVideoPipeline(WanImageToVideoPipeline):
+class WanWidthConcatImageToVideoPipeline(WanImageToVideoPipeline):
     def __init__(
         self,
         tokenizer: AutoTokenizer,
@@ -184,10 +184,10 @@ class WanHBHImageToVideoPipeline(WanImageToVideoPipeline):
         else:
             mask_lat_size[:, :, list(range(1, num_frames - 1))] = 0
         first_frame_mask = mask_lat_size[:, :, 0:1]
-        first_frame_mask = torch.repeat_interleave(first_frame_mask, dim=2, repeats=self.vae_scale_factor_temporal) # ch: 1 -> 4
-        mask_lat_size = torch.concat([first_frame_mask, mask_lat_size[:, :, 1:, :]], dim=2) # ch: 48 -> 48 + 4
-        mask_lat_size = mask_lat_size.view(batch_size, -1, self.vae_scale_factor_temporal, latent_height, total_latent_width) # ch: 52 -> 13s
-        mask_lat_size = mask_lat_size.transpose(1, 2) # vae에서 (B, F, C, H, W)으로 들어가기 때문에 맞춰주기 위함
+        first_frame_mask = torch.repeat_interleave(first_frame_mask, dim=2, repeats=self.vae_scale_factor_temporal) # 1 -> 4
+        mask_lat_size = torch.concat([first_frame_mask, mask_lat_size[:, :, 1:, :]], dim=2) # 48 -> 48 + 4
+        mask_lat_size = mask_lat_size.view(batch_size, -1, self.vae_scale_factor_temporal, latent_height, total_latent_width) # 1*52 -> 13*4
+        mask_lat_size = mask_lat_size.transpose(1, 2)
         mask_lat_size = mask_lat_size.to(latent_condition.device)
 
         return latents, torch.concat([mask_lat_size, latent_condition], dim=1), (exo_latent_width, ego_latent_width)
@@ -728,8 +728,8 @@ class WanI2VSftTrainer(Trainer):
         self.state.transformer_config = self.components.transformer.config
 
     @override
-    def initialize_pipeline(self) -> WanHBHImageToVideoPipeline:
-        pipe = WanHBHImageToVideoPipeline(
+    def initialize_pipeline(self) -> WanWidthConcatImageToVideoPipeline:
+        pipe = WanWidthConcatImageToVideoPipeline(
             tokenizer=self.components.tokenizer,
             text_encoder=self.components.text_encoder,
             vae=self.components.vae,
@@ -890,7 +890,7 @@ class WanI2VSftTrainer(Trainer):
         # Set ego_view mask (right part) to 0.0  
         mask_lat_size[:, :, :, :, exo_latent_width:] = 0.0
         
-        # Use the same masking logic as WanHBHImageToVideoPipeline.prepare_latents
+        # Use the same masking logic as WanWidthConcatImageToVideoPipeline.prepare_latents
         # Apply temporal masking (only first frame is visible, rest are masked)
         mask_lat_size[:, :, list(range(1, actual_num_frames - 1))] = 0
             
@@ -943,7 +943,7 @@ class WanI2VSftTrainer(Trainer):
 
     @override
     def validation_step(
-        self, eval_data: Dict[str, Any], pipe: WanHBHImageToVideoPipeline
+        self, eval_data: Dict[str, Any], pipe: WanWidthConcatImageToVideoPipeline
     ) -> List[Tuple[str, Image.Image | List[Image.Image]]]:
         """
         Return the data that needs to be saved. For videos, the data format is List[PIL],
