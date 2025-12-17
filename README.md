@@ -20,12 +20,13 @@ https://github.com/user-attachments/assets/5f599ad0-0922-414b-a8ab-e789da068efa
 ### 🔹 This Week
 - [ ] Release **inference code**
 - [ ] Release **model weights**
+- [ ] Release **data preprocessing code (for inference)**
 
 ---
 
 ### 🔹 By End of December
 - [ ] Release **training code**
-- [ ] Release **data preprocessing code**
+- [ ] Release **data preprocessing code (for train)**
 - [ ] Release **user-friendly interface**
 
 ## 🛠️ Environment Setup
@@ -99,6 +100,65 @@ your_dataset/              # Your custom dataset folder
         ├── frame_000.npy
         └── ...
 ```
+
+<details>
+<summary><b>caption.txt</b> - Text prompts for each video (one per line)</summary>
+
+Each line contains a text description for the corresponding video.
+
+```
+A person walking in a park
+Someone cooking in the kitchen
+A person playing guitar
+```
+
+</details>
+
+<details>
+<summary><b>exo_path.txt</b> - Paths to exocentric videos (one per line)</summary>
+
+Each line contains the absolute or relative path to an exocentric video file.
+
+```
+/path/to/video1.mp4
+/path/to/video2.mp4
+/path/to/video3.mp4
+```
+
+</details>
+
+<details>
+<summary><b>ego_prior_path.txt</b> - Paths to egocentric prior videos (one per line)</summary>
+
+Each line contains the absolute or relative path to an egocentric prior video file.
+
+```
+/path/to/ego_prior1.mp4
+/path/to/ego_prior2.mp4
+/path/to/ego_prior3.mp4
+```
+
+</details>
+
+<details>
+<summary><b>camera_params.json</b> - Camera parameters in JSON format</summary>
+
+JSON file containing camera intrinsic and extrinsic parameters for each video.
+
+```json
+{
+  "video1": {
+    "intrinsic": [...],
+    "extrinsic": [...]
+  },
+  "video2": {
+    "intrinsic": [...],
+    "extrinsic": [...]
+  }
+}
+```
+
+</details>
 
 Then, modify `scripts/infer_itw.sh` (or create a new script) to point to your data paths:
 
