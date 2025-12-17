@@ -32,7 +32,7 @@ https://github.com/user-attachments/assets/5f599ad0-0922-414b-a8ab-e789da068efa
 
 ### System Requirements
 
-- **GPU**: TBD
+- **GPU**: (TBD)
 - **CUDA**: 12.1 or higher
 - **Python**: 3.10
 - **PyTorch**: Compatible with CUDA 12.1
