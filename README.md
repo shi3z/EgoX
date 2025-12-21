@@ -2,13 +2,20 @@
 
 https://github.com/shi3z/EgoX/raw/main/examples/test_testvideo.mp4
 
+> **This is an extended fork of [DAVIAN-Robotics/EgoX](https://github.com/DAVIAN-Robotics/EgoX)**
+>
+> This fork includes **independently implemented Ego Prior generation** and **WebUI** features.
+> The original repository has not yet released the data preprocessing code for Ego Prior generation.
+> We reverse-engineered the Ego Prior pipeline based on the paper and implemented it from scratch.
+
 [![Hugging Face Paper](https://img.shields.io/badge/HuggingFace-Paper%20of%20the%20Day%20%231-orange)](https://huggingface.co/papers/2512.08269)
 [![arXiv](https://img.shields.io/badge/arXiv-2510.26236-b31b1b.svg)](https://arxiv.org/abs/2512.08269)
 [![Project Page](https://img.shields.io/badge/Project_Page-Visit-blue.svg)](https://keh0t0.github.io/EgoX/)
+[![Original Repo](https://img.shields.io/badge/Original-DAVIAN--Robotics%2FEgoX-green)](https://github.com/DAVIAN-Robotics/EgoX)
 
 > [Taewoong Kang\*](https://keh0t0.github.io/), [Kinam Kim\*](https://kinam0252.github.io/), [Dohyeon Kim\*](https://linkedin.com/in/dohyeon-kim-a79231347), [Minho Park](https://pmh9960.github.io/), [Junha Hyung](https://junhahyung.github.io/), and [Jaegul Choo](https://sites.google.com/site/jaegulchoo/)
-> 
-> **DAVIAN Robotics, KAIST AI, SNU**  
+>
+> **DAVIAN Robotics, KAIST AI, SNU**
 > arXiv 2025. (\* indicates equal contribution)
 
 ## 📋 TODO
@@ -56,19 +63,29 @@ python generate_ego_prior.py \
 A Gradio-based web interface for easy video conversion:
 
 ```bash
-# Start the WebUI
+# 1. First, download the required models (see Model Weights Download section below)
+
+# 2. Start the WebUI
 python webui.py --host 0.0.0.0 --port 7860
 
 # Or use the startup script
 bash run_webui.sh
+
+# 3. Open in browser: http://localhost:7860
+#    (or http://<your-server-ip>:7860 for remote access)
 ```
 
 **Features:**
-- Upload any exocentric video
-- Automatic Ego Prior generation
-- One-click inference to generate egocentric video
+- Upload any exocentric (3rd person) video
+- Automatic Ego Prior generation using Depth Anything V2
+- Real-time progress display during inference
+- Customizable caption text for better results
 - Adjustable parameters (seed, GGA, scaling factor)
 - Accessible over network (VPN)
+
+**Processing Time:**
+- Ego Prior generation: ~1-2 minutes
+- EgoX inference: ~30-40 minutes (50 diffusion steps)
 
 ---
 
