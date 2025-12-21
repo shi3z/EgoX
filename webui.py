@@ -33,7 +33,7 @@ def check_model_status():
     return "\n".join(status)
 
 
-def generate_ego_prior(video_path: str, output_dir: str, progress_callback=None):
+def generate_ego_prior(video_path: str, output_dir: str):
     """Generate Ego Prior from exocentric video using generate_ego_prior.py"""
     cmd = [
         "python", "generate_ego_prior.py",
@@ -43,9 +43,6 @@ def generate_ego_prior(video_path: str, output_dir: str, progress_callback=None)
         "--ego_depth", "0.5",
         "--device", "cuda"
     ]
-
-    if progress_callback:
-        progress_callback(0.1, desc="Generating Ego Prior (depth estimation)...")
 
     result = subprocess.run(
         cmd,
@@ -60,28 +57,21 @@ def generate_ego_prior(video_path: str, output_dir: str, progress_callback=None)
     return True
 
 
-def prepare_inference_files(output_dir: str, take_name: str):
+def prepare_inference_files(output_dir: str, take_name: str, caption: str):
     """Prepare files for inference"""
-    # Create path files
-    exo_path = os.path.join(output_dir, "exo.mp4")
-    ego_prior_path = os.path.join(output_dir, "ego_Prior.mp4")
-
     with open(os.path.join(output_dir, "exo_path.txt"), 'w') as f:
         f.write(f"./{output_dir}/exo.mp4\n")
 
     with open(os.path.join(output_dir, "ego_prior_path.txt"), 'w') as f:
         f.write(f"./{output_dir}/ego_Prior.mp4\n")
 
-    # Create caption (generic)
     with open(os.path.join(output_dir, "caption.txt"), 'w') as f:
-        f.write("[Exo view] A person performing an action from third-person view. [Ego view] First-person perspective of the same scene.\n")
+        f.write(caption.strip() + "\n")
 
-    # Setup depth directory structure
     depth_root = os.path.join(output_dir, "depth")
     depth_target = os.path.join(depth_root, take_name)
     os.makedirs(depth_target, exist_ok=True)
 
-    # Move depth maps
     depth_src = os.path.join(output_dir, "depth_maps")
     if os.path.exists(depth_src):
         for f in os.listdir(depth_src):
@@ -91,7 +81,7 @@ def prepare_inference_files(output_dir: str, take_name: str):
     return True
 
 
-def run_inference(output_dir: str, seed: int, use_gga: bool, cos_sim_scale: float, progress_callback=None):
+def run_inference(output_dir: str, seed: int, use_gga: bool, cos_sim_scale: float):
     """Run EgoX inference"""
     model_path = "./checkpoints/pretrained_model/Wan2.1-I2V-14B-480P-Diffusers"
     lora_path = "./checkpoints/EgoX/pytorch_lora_weights.safetensors"
@@ -118,9 +108,6 @@ def run_inference(output_dir: str, seed: int, use_gga: bool, cos_sim_scale: floa
     if use_gga:
         cmd.append("--use_GGA")
 
-    if progress_callback:
-        progress_callback(0.5, desc="Running EgoX inference (this takes ~30 minutes)...")
-
     result = subprocess.run(
         cmd,
         capture_output=True,
@@ -131,7 +118,6 @@ def run_inference(output_dir: str, seed: int, use_gga: bool, cos_sim_scale: floa
     if result.returncode != 0:
         raise Exception(f"Inference failed:\n{result.stderr[-2000:]}")
 
-    # Find output video
     output_video = os.path.join(results_dir, f"{take_name}.mp4")
     if os.path.exists(output_video):
         return output_video
@@ -144,51 +130,52 @@ def process_video(
     seed: int,
     use_gga: bool,
     cos_sim_scale: float,
-    progress=gr.Progress()
+    caption: str
 ):
-    """Full pipeline: Upload -> Ego Prior -> Inference"""
+    """Full pipeline: Upload -> Ego Prior -> Inference (generator for progressive updates)"""
 
     if video_file is None:
-        return None, None, "Please upload a video file."
+        yield None, None, "Please upload a video file."
+        return
 
-    # Check models
     model_path = "./checkpoints/pretrained_model/Wan2.1-I2V-14B-480P-Diffusers"
     lora_path = "./checkpoints/EgoX/pytorch_lora_weights.safetensors"
 
     if not os.path.exists(os.path.join(model_path, "transformer")):
-        return None, None, "Error: Pretrained model not found."
+        yield None, None, "Error: Pretrained model not found."
+        return
 
     if not os.path.exists(lora_path):
-        return None, None, "Error: EgoX LoRA weights not found."
+        yield None, None, "Error: EgoX LoRA weights not found."
+        return
 
     try:
-        # Create output directory
         video_name = Path(video_file).stem
         output_dir = f"./webui_output/{video_name}"
         os.makedirs(output_dir, exist_ok=True)
 
         # Step 1: Generate Ego Prior
-        progress(0.1, desc="Step 1/3: Generating Ego Prior...")
-        generate_ego_prior(video_file, output_dir)
+        yield None, None, "Step 1/3: Generating Ego Prior (depth estimation)...\nThis takes about 1-2 minutes."
 
-        # Get ego prior video path
+        generate_ego_prior(video_file, output_dir)
         ego_prior_path = os.path.join(output_dir, "ego_Prior.mp4")
 
+        # Show Ego Prior immediately after generation
+        yield ego_prior_path, None, "Step 1/3: Ego Prior generated!\n\nStep 2/3: Preparing inference files..."
+
         # Step 2: Prepare inference files
-        progress(0.3, desc="Step 2/3: Preparing inference files...")
         take_name = video_name
-        prepare_inference_files(output_dir, take_name)
+        prepare_inference_files(output_dir, take_name, caption)
+
+        yield ego_prior_path, None, "Step 2/3: Inference files ready!\n\nStep 3/3: Running EgoX inference...\nThis takes about 30 minutes."
 
         # Step 3: Run inference
-        progress(0.4, desc="Step 3/3: Running EgoX inference (~30 min)...")
         output_video = run_inference(output_dir, seed, use_gga, cos_sim_scale)
 
-        progress(1.0, desc="Complete!")
-
-        return ego_prior_path, output_video, f"Success! Output saved to: {output_video}"
+        yield ego_prior_path, output_video, f"Complete!\n\nEgo Prior: {ego_prior_path}\nOutput: {output_video}"
 
     except Exception as e:
-        return None, None, f"Error: {str(e)}"
+        yield None, None, f"Error: {str(e)}"
 
 
 def create_ui():
@@ -252,16 +239,23 @@ def create_ui():
                     label="Cosine Similarity Scaling Factor"
                 )
 
+                caption_input = gr.Textbox(
+                    value="[Exo view] A person performing an action captured from a third-person perspective. The subject moves through the scene. [Ego view] From the first-person perspective, the hands and immediate surroundings are visible as the person interacts with the environment.",
+                    label="Caption",
+                    lines=4,
+                    placeholder="Describe the scene from both Exo and Ego perspectives..."
+                )
+
                 generate_btn = gr.Button("Generate Egocentric Video", variant="primary", size="lg")
 
             with gr.Column(scale=2):
                 gr.Markdown("### Output")
 
-                with gr.Row():
-                    ego_prior_output = gr.Video(label="Generated Ego Prior")
-                    ego_video_output = gr.Video(label="Final Egocentric Video")
+                output_status = gr.Textbox(label="Progress", interactive=False, lines=5)
 
-                output_status = gr.Textbox(label="Status", interactive=False, lines=5)
+                with gr.Row():
+                    ego_prior_output = gr.Video(label="Generated Ego Prior (Step 1)")
+                    ego_video_output = gr.Video(label="Final Egocentric Video (Step 3)")
 
         # Event handlers
         refresh_btn.click(
@@ -271,7 +265,7 @@ def create_ui():
 
         generate_btn.click(
             fn=process_video,
-            inputs=[video_input, seed_input, use_gga, cos_sim_scale],
+            inputs=[video_input, seed_input, use_gga, cos_sim_scale, caption_input],
             outputs=[ego_prior_output, ego_video_output, output_status]
         )
 
