@@ -81,8 +81,10 @@ def prepare_inference_files(output_dir: str, take_name: str, caption: str):
     return True
 
 
-def run_inference(output_dir: str, seed: int, use_gga: bool, cos_sim_scale: float):
-    """Run EgoX inference"""
+def run_inference_with_progress(output_dir: str, seed: int, use_gga: bool, cos_sim_scale: float):
+    """Run EgoX inference with progress updates (generator)"""
+    import re
+
     model_path = "./checkpoints/pretrained_model/Wan2.1-I2V-14B-480P-Diffusers"
     lora_path = "./checkpoints/EgoX/pytorch_lora_weights.safetensors"
 
@@ -90,7 +92,7 @@ def run_inference(output_dir: str, seed: int, use_gga: bool, cos_sim_scale: floa
     results_dir = f"./results_{take_name}"
 
     cmd = [
-        "python", "infer.py",
+        "python", "-u", "infer.py",
         "--prompt", os.path.join(output_dir, "caption.txt"),
         "--exo_video_path", os.path.join(output_dir, "exo_path.txt"),
         "--ego_prior_video_path", os.path.join(output_dir, "ego_prior_path.txt"),
@@ -108,19 +110,38 @@ def run_inference(output_dir: str, seed: int, use_gga: bool, cos_sim_scale: floa
     if use_gga:
         cmd.append("--use_GGA")
 
-    result = subprocess.run(
+    process = subprocess.Popen(
         cmd,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
+        bufsize=1,
         cwd=os.path.dirname(os.path.abspath(__file__))
     )
 
-    if result.returncode != 0:
-        raise Exception(f"Inference failed:\n{result.stderr[-2000:]}")
+    last_progress = ""
+    for line in process.stdout:
+        # Parse progress from tqdm output like "50%|█████ | 25/50"
+        match = re.search(r'(\d+)%\|[^|]+\|\s*(\d+)/(\d+)', line)
+        if match:
+            percent = match.group(1)
+            current = match.group(2)
+            total = match.group(3)
+            last_progress = f"Diffusion: {percent}% ({current}/{total} steps)"
+            yield last_progress, None
+        elif "Loading" in line:
+            yield "Loading model...", None
+        elif "Video saved" in line:
+            yield "Video saved!", None
+
+    process.wait()
+
+    if process.returncode != 0:
+        raise Exception(f"Inference failed with code {process.returncode}")
 
     output_video = os.path.join(results_dir, f"{take_name}.mp4")
     if os.path.exists(output_video):
-        return output_video
+        yield "Complete!", output_video
     else:
         raise Exception(f"Output video not found at {output_video}")
 
@@ -167,10 +188,14 @@ def process_video(
         take_name = video_name
         prepare_inference_files(output_dir, take_name, caption)
 
-        yield ego_prior_path, None, "Step 2/3: Inference files ready!\n\nStep 3/3: Running EgoX inference...\nThis takes about 30 minutes."
+        yield ego_prior_path, None, "Step 2/3: Inference files ready!\n\nStep 3/3: Running EgoX inference..."
 
-        # Step 3: Run inference
-        output_video = run_inference(output_dir, seed, use_gga, cos_sim_scale)
+        # Step 3: Run inference with progress
+        output_video = None
+        for progress_msg, video_path in run_inference_with_progress(output_dir, seed, use_gga, cos_sim_scale):
+            if video_path:
+                output_video = video_path
+            yield ego_prior_path, output_video, f"Step 3/3: {progress_msg}"
 
         yield ego_prior_path, output_video, f"Complete!\n\nEgo Prior: {ego_prior_path}\nOutput: {output_video}"
 
