@@ -15,7 +15,7 @@ data??
 data
 
 logs
-videos
+# videos
 images
 *.rrd
 
