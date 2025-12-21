@@ -29,6 +29,53 @@ https://github.com/user-attachments/assets/5f599ad0-0922-414b-a8ab-e789da068efa
 - [ ] Release **data preprocessing code (for train)**
 - [ ] Release **user-friendly interface**
 
+## 🆕 New Features (Fork by shi3z)
+
+### Ego Prior Generation Script
+
+The `generate_ego_prior.py` script automatically generates Ego Prior videos from exocentric videos using:
+- **Depth Anything V2** for depth estimation
+- 3D point cloud creation from depth maps
+- Automatic ego camera trajectory generation
+- Z-buffer rendering from the egocentric viewpoint
+
+```bash
+# Generate Ego Prior from your video
+python generate_ego_prior.py \
+    --exo_video ./your_video.mp4 \
+    --output_dir ./output/ \
+    --trajectory center_look \
+    --ego_depth 0.5 \
+    --device cuda
+```
+
+**Output files:**
+- `output/exo.mp4` - Resized exocentric video (784x448, 49 frames)
+- `output/ego_Prior.mp4` - Generated Ego Prior video (448x448, 49 frames)
+- `output/camera_params.json` - Camera intrinsic/extrinsic parameters
+- `output/depth_maps/` - Per-frame depth maps
+
+### WebUI
+
+A Gradio-based web interface for easy video conversion:
+
+```bash
+# Start the WebUI
+python webui.py --host 0.0.0.0 --port 7860
+
+# Or use the startup script
+bash run_webui.sh
+```
+
+**Features:**
+- Upload any exocentric video
+- Automatic Ego Prior generation
+- One-click inference to generate egocentric video
+- Adjustable parameters (seed, GGA, scaling factor)
+- Accessible over network (VPN)
+
+---
+
 ## 🛠️ Environment Setup
 
 ### System Requirements

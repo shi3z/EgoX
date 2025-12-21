@@ -53,3 +53,5 @@ test_ego_prior/
 test_ego_prior2/
 results_test/
 results_testvideo/
+results_*/
+webui_output/
