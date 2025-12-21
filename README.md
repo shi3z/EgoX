@@ -1,4 +1,4 @@
-# EgoX: Egocentric Video Generation from a Single Exocentric Video
+# EgoX: Egocentric Video Generation from a Single Exocentric Video with WebUI
 
 <video src="https://github.com/shi3z/EgoX/raw/main/examples/test_testvideo.mp4" controls width="100%"></video>
 
@@ -17,20 +17,6 @@
 >
 > **DAVIAN Robotics, KAIST AI, SNU**
 > arXiv 2025. (\* indicates equal contribution)
-
-## 📋 TODO
-
-### 🔹 This Week
-- [x] Release **inference code**
-- [x] Release **model weights**
-- [ ] Release **data preprocessing code (for inference)**
-
----
-
-### 🔹 By End of December
-- [ ] Release **training code**
-- [ ] Release **data preprocessing code (for train)**
-- [ ] Release **user-friendly interface**
 
 ## 🆕 New Features (Fork by shi3z)
 
