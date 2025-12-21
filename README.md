@@ -1,6 +1,6 @@
 # EgoX: Egocentric Video Generation from a Single Exocentric Video
 
-https://github.com/shi3z/EgoX/raw/main/examples/test_testvideo.mp4
+<video src="https://github.com/shi3z/EgoX/raw/main/examples/test_testvideo.mp4" controls width="100%"></video>
 
 > **This is an extended fork of [DAVIAN-Robotics/EgoX](https://github.com/DAVIAN-Robotics/EgoX)**
 >
