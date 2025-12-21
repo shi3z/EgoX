@@ -1,0 +1,1 @@
+[Exo view] A person performing an action captured from a third-person perspective. The subject moves through the scene. [Ego view] From the first-person perspective, the hands and immediate surroundings are visible as the person interacts with the environment.

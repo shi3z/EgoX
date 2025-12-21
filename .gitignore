@@ -41,3 +41,15 @@ dataset/
 Wan2.1-I2V-14B-480P-Diffusers/
 
 checkpoints/
+
+# Copyrighted example videos
+example/in_the_wild/videos/joker/
+example/in_the_wild/videos/ironman/
+example/in_the_wild/videos/hulk_blackwidow/
+example/in_the_wild/videos/tabletennis/
+
+# Test outputs (may contain copyrighted data)
+test_ego_prior/
+test_ego_prior2/
+results_test/
+results_testvideo/
