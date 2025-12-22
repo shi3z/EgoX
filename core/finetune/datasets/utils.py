@@ -11,8 +11,16 @@ from safetensors.torch import load
 
 # Must import after torch because this can sometimes lead to a nasty segmentation fault, or stack smashing error
 # Very few bug reports but it happens. Look in decord Github issues for more relevant information.
-import decord  # isort:skip
-decord.bridge.set_bridge("torch")
+# Lazy import decord to avoid import errors when not needed
+decord = None
+
+def _ensure_decord():
+    global decord
+    if decord is None:
+        import decord as _decord
+        _decord.bridge.set_bridge("torch")
+        decord = _decord
+    return decord
 
 def generate_uniform_pointmap(height, width):
     x = np.linspace(-1, 1, width)
@@ -195,9 +203,10 @@ def preprocess_video_with_resize(
         video_path = Path(video_path)
     
     # Determine target dimensions based on video type
+    _decord = _ensure_decord()
     if video_type == "exo":
         target_width = width - height  # exo_width
-        video_reader = decord.VideoReader(uri=video_path.as_posix(), width=target_width, height=height)
+        video_reader = __decord.VideoReader(uri=video_path.as_posix(), width=target_width, height=height)
         video_num_frames = len(video_reader)
         
         if video_num_frames < max_num_frames:
@@ -218,7 +227,7 @@ def preprocess_video_with_resize(
             return frames
     elif video_type in ["ego_gt", "ego_prior"]:
         target_width = height  # ego_width
-        video_reader = decord.VideoReader(uri=video_path.as_posix(), width=target_width, height=height)
+        video_reader = __decord.VideoReader(uri=video_path.as_posix(), width=target_width, height=height)
         video_num_frames = len(video_reader)
         
         if video_num_frames < max_num_frames:
@@ -242,7 +251,7 @@ def preprocess_video_with_resize(
         height = 448
         width = 796 + 448
         target_width = width - height  # exo_width
-        video_reader = decord.VideoReader(uri=video_path.as_posix(), width=width, height=height)
+        video_reader = _decord.VideoReader(uri=video_path.as_posix(), width=width, height=height)
         video_num_frames = len(video_reader)
         
         if video_num_frames < max_num_frames:
@@ -271,7 +280,7 @@ def preprocess_video_with_resize(
         height = 448
         width = 796 + 448
         target_width = width - height  # exo_width
-        video_reader = decord.VideoReader(uri=video_path.as_posix(), width=width, height=height)
+        video_reader = _decord.VideoReader(uri=video_path.as_posix(), width=width, height=height)
         video_num_frames = len(video_reader)
         
         if video_num_frames < max_num_frames:
@@ -295,7 +304,7 @@ def preprocess_video_with_resize(
 
     elif video_type == "ego_prior_GGA":
         target_width = height  # exo_width
-        video_reader = decord.VideoReader(uri=video_path.as_posix(), width=target_width, height=height)
+        video_reader = _decord.VideoReader(uri=video_path.as_posix(), width=target_width, height=height)
         video_num_frames = len(video_reader)
         
         if video_num_frames < max_num_frames:
@@ -345,7 +354,8 @@ def preprocess_video_with_buckets(
         3. Finds nearest resolution bucket based on dimensions
         4. Resizes frames to match bucket resolution
     """
-    video_reader = decord.VideoReader(uri=video_path.as_posix())
+    _decord = _ensure_decord()
+    video_reader = _decord.VideoReader(uri=video_path.as_posix())
     video_num_frames = len(video_reader)
     resolution_buckets = [bucket for bucket in resolution_buckets if bucket[0] <= video_num_frames]
     if len(resolution_buckets) == 0:

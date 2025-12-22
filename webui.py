@@ -41,7 +41,7 @@ def generate_ego_prior(video_path: str, output_dir: str, camera_position: str = 
         "--output_dir", output_dir,
         "--trajectory", "center_look",
         "--ego_depth", "0.5",
-        "--device", "cuda",
+        "--device", "cpu",  # Use CPU for depth estimation (GB10/Blackwell not yet supported by PyTorch)
         "--camera_position", camera_position,
         "--look_direction", look_direction,
     ]

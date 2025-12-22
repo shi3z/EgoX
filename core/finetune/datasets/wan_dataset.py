@@ -30,11 +30,7 @@ from .utils import (
 if TYPE_CHECKING:
     from core.finetune.trainer import Trainer
 
-# Must import after torch because this can sometimes lead to a nasty segmentation fault, or stack smashing error
-# Very few bug reports but it happens. Look in decord Github issues for more relevant information.
-import decord  # isort:skip
-
-decord.bridge.set_bridge("torch")
+# decord import moved to utils.py with lazy loading
 
 logger = get_logger(LOG_NAME, LOG_LEVEL)
 
