@@ -33,7 +33,7 @@ def check_model_status():
     return "\n".join(status)
 
 
-def generate_ego_prior(video_path: str, output_dir: str):
+def generate_ego_prior(video_path: str, output_dir: str, camera_position: str = "center", look_direction: str = "front"):
     """Generate Ego Prior from exocentric video using generate_ego_prior.py"""
     cmd = [
         "python", "generate_ego_prior.py",
@@ -41,7 +41,9 @@ def generate_ego_prior(video_path: str, output_dir: str):
         "--output_dir", output_dir,
         "--trajectory", "center_look",
         "--ego_depth", "0.5",
-        "--device", "cuda"
+        "--device", "cuda",
+        "--camera_position", camera_position,
+        "--look_direction", look_direction,
     ]
 
     result = subprocess.run(
@@ -151,7 +153,9 @@ def process_video(
     seed: int,
     use_gga: bool,
     cos_sim_scale: float,
-    caption: str
+    caption: str,
+    camera_position: str,
+    look_direction: str
 ):
     """Full pipeline: Upload -> Ego Prior -> Inference (generator for progressive updates)"""
 
@@ -176,9 +180,9 @@ def process_video(
         os.makedirs(output_dir, exist_ok=True)
 
         # Step 1: Generate Ego Prior
-        yield None, None, "Step 1/3: Generating Ego Prior (depth estimation)...\nThis takes about 1-2 minutes."
+        yield None, None, f"Step 1/3: Generating Ego Prior...\nPosition: {camera_position}, Direction: {look_direction}\nThis takes about 1-2 minutes."
 
-        generate_ego_prior(video_file, output_dir)
+        generate_ego_prior(video_file, output_dir, camera_position, look_direction)
         ego_prior_path = os.path.join(output_dir, "ego_Prior.mp4")
 
         # Show Ego Prior immediately after generation
@@ -271,6 +275,20 @@ def create_ui():
                     placeholder="Describe the scene from both Exo and Ego perspectives..."
                 )
 
+                gr.Markdown("### Viewpoint Settings")
+
+                camera_position = gr.Radio(
+                    choices=["center", "left", "right"],
+                    value="center",
+                    label="Camera Position (whose viewpoint?)"
+                )
+
+                look_direction = gr.Radio(
+                    choices=["front", "left", "right", "up", "down"],
+                    value="front",
+                    label="Look Direction"
+                )
+
                 generate_btn = gr.Button("Generate Egocentric Video", variant="primary", size="lg")
 
             with gr.Column(scale=2):
@@ -290,7 +308,7 @@ def create_ui():
 
         generate_btn.click(
             fn=process_video,
-            inputs=[video_input, seed_input, use_gga, cos_sim_scale, caption_input],
+            inputs=[video_input, seed_input, use_gga, cos_sim_scale, caption_input, camera_position, look_direction],
             outputs=[ego_prior_output, ego_video_output, output_status]
         )
 

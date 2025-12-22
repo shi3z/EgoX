@@ -188,6 +188,8 @@ def create_ego_camera_trajectory(
     exo_intrinsics: np.ndarray,
     trajectory_type: str = "center_look",
     ego_depth_ratio: float = 0.6,  # How deep into the scene (0=near, 1=far)
+    camera_position: str = "center",  # center, left, right
+    look_direction: str = "front",  # front, left, right, up, down
 ) -> List[np.ndarray]:
     """
     Create ego camera trajectory INSIDE the scene.
@@ -201,6 +203,8 @@ def create_ego_camera_trajectory(
         exo_intrinsics: Exo camera intrinsics
         trajectory_type: Type of camera motion
         ego_depth_ratio: Where in depth to place ego camera (0=near, 1=far)
+        camera_position: Where to place camera horizontally (center/left/right)
+        look_direction: Which direction to look (front/left/right/up/down)
     """
     h, w = depth_maps[0].shape
     fx, fy = exo_intrinsics[0, 0], exo_intrinsics[1, 1]
@@ -208,22 +212,34 @@ def create_ego_camera_trajectory(
 
     extrinsics = []
 
+    # Determine horizontal offset based on camera_position
+    if camera_position == "left":
+        h_offset_ratio = 0.25  # Left quarter
+    elif camera_position == "right":
+        h_offset_ratio = 0.75  # Right quarter
+    else:  # center
+        h_offset_ratio = 0.5
+
     for i in range(num_frames):
         t = i / (num_frames - 1)  # 0 to 1
         depth = depth_maps[i]
 
         # Estimate ego position from depth
-        # Find a point in the scene to place the ego camera
-        # Use center region of the image, at ego_depth_ratio of the depth
-        center_region = depth[h//4:3*h//4, w//4:3*w//4]
+        # Select region based on camera_position
+        if camera_position == "left":
+            region = depth[h//4:3*h//4, :w//2]
+        elif camera_position == "right":
+            region = depth[h//4:3*h//4, w//2:]
+        else:
+            region = depth[h//4:3*h//4, w//4:3*w//4]
 
         # Sort depths and pick at ego_depth_ratio percentile
-        sorted_depths = np.sort(center_region.flatten())
+        sorted_depths = np.sort(region.flatten())
         target_depth = sorted_depths[int(len(sorted_depths) * ego_depth_ratio)]
 
         # Ego camera position in world coordinates
-        # Place it at the center of the image, at target_depth
-        ego_u, ego_v = w // 2, h // 2
+        ego_u = int(w * h_offset_ratio)
+        ego_v = h // 2
         ego_z = target_depth
         ego_x = (ego_u - cx) * ego_z / fx
         ego_y = (ego_v - cy) * ego_z / fy
@@ -234,20 +250,42 @@ def create_ego_camera_trajectory(
         # Ego camera position
         position = np.array([ego_x, ego_y, ego_z])
 
+        # Camera orientation based on look_direction
+        if look_direction == "left":
+            base_angle = -np.pi / 3  # -60 degrees
+        elif look_direction == "right":
+            base_angle = np.pi / 3  # +60 degrees
+        elif look_direction == "up":
+            base_angle = 0
+            # Will adjust y component below
+        elif look_direction == "down":
+            base_angle = 0
+            # Will adjust y component below
+        else:  # front
+            base_angle = 0
+
         # Camera orientation - look outward from center, with some rotation
         if trajectory_type == "center_look":
             # Look toward the edges of the scene, rotating over time
-            angle = t * np.pi * 0.5 - np.pi * 0.25  # -45 to +45 degrees
+            angle = base_angle + t * np.pi * 0.3 - np.pi * 0.15  # +/- 27 degrees sweep
             look_dir = np.array([np.sin(angle), 0, np.cos(angle)])
         elif trajectory_type == "forward_look":
-            # Always look forward (toward camera/exo view)
-            look_dir = np.array([0, 0, -1])
+            # Always look in the specified direction
+            look_dir = np.array([np.sin(base_angle), 0, np.cos(base_angle)])
         elif trajectory_type == "scan":
-            # Scan left to right
-            angle = (t - 0.5) * np.pi * 0.8  # -72 to +72 degrees
+            # Scan left to right from base direction
+            angle = base_angle + (t - 0.5) * np.pi * 0.8  # -72 to +72 degrees from base
             look_dir = np.array([np.sin(angle), 0, np.cos(angle)])
         else:
-            look_dir = np.array([0, 0, 1])
+            look_dir = np.array([np.sin(base_angle), 0, np.cos(base_angle)])
+
+        # Adjust for up/down looking
+        if look_direction == "up":
+            look_dir[1] = -0.5  # Look upward
+            look_dir = look_dir / np.linalg.norm(look_dir)
+        elif look_direction == "down":
+            look_dir[1] = 0.5  # Look downward
+            look_dir = look_dir / np.linalg.norm(look_dir)
 
         # Build rotation matrix (camera looks along -Z in camera space)
         forward = -look_dir / (np.linalg.norm(look_dir) + 1e-8)
@@ -382,6 +420,8 @@ def generate_ego_prior(
     save_depth: bool = True,
     save_camera_params: bool = True,
     ego_depth_ratio: float = 0.5,
+    camera_position: str = "center",  # center, left, right
+    look_direction: str = "front",  # front, left, right, up, down
 ) -> str:
     """
     Generate Ego Prior video from Exo video
@@ -422,6 +462,8 @@ def generate_ego_prior(
         exo_intrinsics,
         trajectory_type=trajectory_type,
         ego_depth_ratio=ego_depth_ratio,
+        camera_position=camera_position,
+        look_direction=look_direction,
     )
 
     ego_intrinsics = create_ego_camera_intrinsics(output_size[1], output_size[0])
@@ -509,6 +551,12 @@ def main():
     parser.add_argument("--no_camera_params", action="store_true", help="Don't save camera params")
     parser.add_argument("--ego_depth", type=float, default=0.5,
                        help="Where to place ego camera in depth (0=near, 1=far)")
+    parser.add_argument("--camera_position", type=str, default="center",
+                       choices=["center", "left", "right"],
+                       help="Camera horizontal position")
+    parser.add_argument("--look_direction", type=str, default="front",
+                       choices=["front", "left", "right", "up", "down"],
+                       help="Camera look direction")
 
     args = parser.parse_args()
 
@@ -522,6 +570,8 @@ def main():
         save_depth=not args.no_depth,
         save_camera_params=not args.no_camera_params,
         ego_depth_ratio=args.ego_depth,
+        camera_position=args.camera_position,
+        look_direction=args.look_direction,
     )
 
 
