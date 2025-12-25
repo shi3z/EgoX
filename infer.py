@@ -121,6 +121,7 @@ def main(args):
             exo_H, exo_W = H, W - H
             W = H
 
+            depth_map_path = Path(args.depth_root) / take_name
             depth_maps = []
             for depth_map_file in sorted(depth_map_path.glob("*.npy")):
                 depth_map = np.load(depth_map_file)
