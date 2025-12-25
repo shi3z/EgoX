@@ -84,7 +84,7 @@ def prepare_inference_files(output_dir: str, take_name: str, caption: str):
 
 
 def run_inference_with_progress(output_dir: str, seed: int, use_gga: bool, cos_sim_scale: float):
-    """Run EgoX inference with progress updates (generator)"""
+    """Run EgoX inference with progress updates (generator) using NVIDIA Docker container"""
     import re
 
     model_path = "./checkpoints/pretrained_model/Wan2.1-I2V-14B-480P-Diffusers"
@@ -93,7 +93,8 @@ def run_inference_with_progress(output_dir: str, seed: int, use_gga: bool, cos_s
     take_name = os.path.basename(output_dir.rstrip('/'))
     results_dir = f"./results_{take_name}"
 
-    cmd = [
+    # Build inference command for inside container
+    infer_cmd = " ".join([
         "python", "-u", "infer.py",
         "--prompt", os.path.join(output_dir, "caption.txt"),
         "--exo_video_path", os.path.join(output_dir, "exo_path.txt"),
@@ -106,19 +107,30 @@ def run_inference_with_progress(output_dir: str, seed: int, use_gga: bool, cos_s
         "--out", results_dir,
         "--seed", str(seed),
         "--cos_sim_scaling_factor", str(cos_sim_scale),
-        "--idx", "0"
-    ]
+        "--idx", "0",
+        "--use_GGA" if use_gga else ""
+    ])
 
-    if use_gga:
-        cmd.append("--use_GGA")
+    # Get absolute path for mounting
+    workspace_path = os.path.dirname(os.path.abspath(__file__))
+
+    # Docker command for NVIDIA container (GB10/Blackwell support)
+    cmd = [
+        "docker", "run", "--gpus", "all", "--rm",
+        "--ipc=host", "--ulimit", "memlock=-1", "--ulimit", "stack=67108864",
+        "-v", f"{workspace_path}:/workspace/EgoX",
+        "-w", "/workspace/EgoX",
+        "nvcr.io/nvidia/pytorch:25.09-py3",
+        "bash", "-c",
+        f"pip install -q diffusers==0.34.0 transformers accelerate sentencepiece peft imageio imageio-ffmpeg tyro ftfy opencv-python-headless wandb && {infer_cmd}"
+    ]
 
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        bufsize=1,
-        cwd=os.path.dirname(os.path.abspath(__file__))
+        bufsize=1
     )
 
     last_progress = ""
