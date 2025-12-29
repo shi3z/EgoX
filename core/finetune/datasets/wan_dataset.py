@@ -30,7 +30,7 @@ from .utils import (
 if TYPE_CHECKING:
     from core.finetune.trainer import Trainer
 
-# decord import moved to utils.py with lazy loading
+# decord import removed - lazy loading handled in utils.py for ARM64 compatibility
 
 logger = get_logger(LOG_NAME, LOG_LEVEL)
 

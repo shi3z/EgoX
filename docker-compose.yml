@@ -1,0 +1,28 @@
+services:
+  egox-webui:
+    image: nvcr.io/nvidia/pytorch:25.11-py3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "7860:7860"
+    volumes:
+      - .:/workspace/EgoX
+      - ~/.cache:/root/.cache
+    working_dir: /workspace/EgoX
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    command: >
+      bash -c "
+        pip install -q gradio diffusers==0.34.0 transformers accelerate sentencepiece peft imageio imageio-ffmpeg tyro ftfy opencv-python-headless wandb &&
+        python webui.py --host 0.0.0.0 --port 7860
+      "
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
