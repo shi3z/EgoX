@@ -212,7 +212,9 @@ for i, exr_file in enumerate(sorted(depth_src.glob("*.exr"))):
         ego_txt = job_dir / 'ego_prior_path.txt'
 
         with open(prompt_txt, 'w') as f:
-            f.write(prompt + '\n')
+            # Prompt must be single line - replace newlines with spaces
+            single_line_prompt = prompt.replace('\n', ' ').replace('\r', ' ')
+            f.write(single_line_prompt + '\n')
         with open(exo_txt, 'w') as f:
             f.write(exo_video_container + '\n')
         with open(ego_txt, 'w') as f:
