@@ -99,12 +99,17 @@ def worker_process(job_id, video_path, prompt, num_frames=49, use_gga=False):
         update_job(job_id, current_step_num=1, current_step='Video準備', step_progress=0)
 
         exo_path = videos_dir / 'exo.mp4'
+        # Convert paths for container
+        video_path_container = f'/workspace/EgoX/{Path(video_path).relative_to("/home/shi3z/git/EgoX")}'
+        exo_path_container = f'/workspace/EgoX/{exo_path.relative_to("/home/shi3z/git/EgoX")}'
+
         cmd = [
-            'ffmpeg', '-y', '-i', str(video_path),
+            'docker', 'exec', 'egox-egox-webui-1',
+            'ffmpeg', '-y', '-i', video_path_container,
             '-vf', 'scale=-2:448',
             '-frames:v', str(num_frames),
             '-c:v', 'libx264', '-preset', 'fast',
-            '-an', str(exo_path)
+            '-an', exo_path_container
         ]
         success, output = run_command(cmd, job_id, 'Video準備')
         if not success:
@@ -120,15 +125,18 @@ def worker_process(job_id, video_path, prompt, num_frames=49, use_gga=False):
         vipe_output.mkdir(parents=True, exist_ok=True)
 
         # Run ViPE inside Docker container
+        exo_video_container = f'/workspace/EgoX/{videos_dir.relative_to("/home/shi3z/git/EgoX")}/exo.mp4'
+        vipe_output_container = f'/workspace/EgoX/EgoX-EgoPriorRenderer/vipe_results/{video_name}'
         docker_cmd = [
             'docker', 'exec', 'egox-egox-webui-1',
             'bash', '-c',
             f'''cd /workspace/EgoX/EgoX-EgoPriorRenderer && \
-            python -m vipe infer \
-                --video_path /workspace/EgoX/{videos_dir.relative_to("/home/shi3z/git/EgoX")}/exo.mp4 \
-                --output_path /workspace/EgoX/EgoX-EgoPriorRenderer/vipe_results/{video_name} \
-                --num_frames {num_frames} \
-                --device cuda'''
+            vipe infer "{exo_video_container}" \
+                -o "{vipe_output_container}" \
+                --start_frame 0 \
+                --end_frame {num_frames - 1} \
+                --assume_fixed_camera_pose \
+                --pipeline lyra'''
         ]
         success, output = run_command(docker_cmd, job_id, 'ViPE推論')
         if not success:
