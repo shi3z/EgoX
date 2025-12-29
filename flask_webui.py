@@ -203,13 +203,32 @@ for i, exr_file in enumerate(sorted(depth_src.glob("*.exr"))):
         results_dir = job_dir / 'results'
         results_dir.mkdir(parents=True, exist_ok=True)
 
+        # Create txt files for infer.py arguments
+        exo_video_container = f'/workspace/EgoX/{videos_dir.relative_to("/home/shi3z/git/EgoX")}/exo.mp4'
+        ego_prior_container = f'/workspace/EgoX/{videos_dir.relative_to("/home/shi3z/git/EgoX")}/ego_Prior.mp4'
+
+        prompt_txt = job_dir / 'prompt.txt'
+        exo_txt = job_dir / 'exo_path.txt'
+        ego_txt = job_dir / 'ego_prior_path.txt'
+
+        with open(prompt_txt, 'w') as f:
+            f.write(prompt + '\n')
+        with open(exo_txt, 'w') as f:
+            f.write(exo_video_container + '\n')
+        with open(ego_txt, 'w') as f:
+            f.write(ego_prior_container + '\n')
+
         infer_cmd = [
             'docker', 'exec', 'egox-egox-webui-1',
             'python', '-u', '/workspace/EgoX/infer.py',
             '--model_path', '/workspace/EgoX/checkpoints/pretrained_model/Wan2.1-I2V-14B-480P-Diffusers',
             '--lora_path', '/workspace/EgoX/checkpoints/EgoX/pytorch_lora_weights.safetensors',
+            '--prompt', f'/workspace/EgoX/{prompt_txt.relative_to("/home/shi3z/git/EgoX")}',
+            '--exo_video_path', f'/workspace/EgoX/{exo_txt.relative_to("/home/shi3z/git/EgoX")}',
+            '--ego_prior_video_path', f'/workspace/EgoX/{ego_txt.relative_to("/home/shi3z/git/EgoX")}',
             '--meta_data_file', f'/workspace/EgoX/{job_dir.relative_to("/home/shi3z/git/EgoX")}/meta.json',
             '--out', f'/workspace/EgoX/{results_dir.relative_to("/home/shi3z/git/EgoX")}',
+            '--depth_root', f'/workspace/EgoX/depth_maps',
             '--seed', '42',
             '--in_the_wild'
         ]
