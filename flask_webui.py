@@ -151,7 +151,7 @@ def worker_process(job_id, video_path, prompt, num_frames=49, use_gga=False):
 
         render_cmd = [
             'docker', 'exec', 'egox-egox-webui-1',
-            'python', '/workspace/EgoX/EgoX-EgoPriorRenderer/vipe/render_vipe_pointcloud.py',
+            'python', '/workspace/EgoX/EgoX-EgoPriorRenderer/scripts/render_vipe_pointcloud.py',
             '--meta_file', f'/workspace/EgoX/{job_dir.relative_to("/home/shi3z/git/EgoX")}/meta.json',
             '--vipe_results_root', '/workspace/EgoX/EgoX-EgoPriorRenderer/vipe_results',
             '--output_height', '448',
