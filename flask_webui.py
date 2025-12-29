@@ -152,10 +152,10 @@ def worker_process(job_id, video_path, prompt, num_frames=49, use_gga=False):
         render_cmd = [
             'docker', 'exec', 'egox-egox-webui-1',
             'python', '/workspace/EgoX/EgoX-EgoPriorRenderer/scripts/render_vipe_pointcloud.py',
-            '--meta_file', f'/workspace/EgoX/{job_dir.relative_to("/home/shi3z/git/EgoX")}/meta.json',
-            '--vipe_results_root', '/workspace/EgoX/EgoX-EgoPriorRenderer/vipe_results',
-            '--output_height', '448',
-            '--output_width', '448'
+            '--input_dir', f'/workspace/EgoX/EgoX-EgoPriorRenderer/vipe_results/{video_name}',
+            '--out_dir', f'/workspace/EgoX/{videos_dir.relative_to("/home/shi3z/git/EgoX")}',
+            '--meta_json_path', f'/workspace/EgoX/{job_dir.relative_to("/home/shi3z/git/EgoX")}/meta.json',
+            '--end_frame', str(num_frames - 1)
         ]
         success, output = run_command(render_cmd, job_id, 'Ego Prior生成')
         if not success:
