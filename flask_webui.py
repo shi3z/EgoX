@@ -769,6 +769,11 @@ if __name__ == '__main__':
     Path(app.config['UPLOAD_FOLDER']).mkdir(parents=True, exist_ok=True)
     Path(app.config['OUTPUT_FOLDER']).mkdir(parents=True, exist_ok=True)
 
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', type=int, default=7861, help='Port to run on')
+    args = parser.parse_args()
+
     print("Starting EgoX Flask WebUI...")
-    print("Open http://localhost:7860 in your browser")
-    app.run(host='0.0.0.0', port=7860, debug=False, threaded=True)
+    print(f"Open http://localhost:{args.port} in your browser")
+    app.run(host='0.0.0.0', port=args.port, debug=False, threaded=True)
