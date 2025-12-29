@@ -162,6 +162,17 @@ def worker_process(job_id, video_path, prompt, num_frames=49, use_gga=False):
             update_job(job_id, status='error', error=f'Ego Prior生成に失敗: {output}')
             return
 
+        # Move ego_Prior.mp4 from nested directory to expected location
+        nested_ego_prior = videos_dir / video_name / 'ego_Prior.mp4'
+        expected_ego_prior = videos_dir / 'ego_Prior.mp4'
+        move_cmd = [
+            'docker', 'exec', 'egox-egox-webui-1',
+            'mv',
+            f'/workspace/EgoX/{nested_ego_prior.relative_to("/home/shi3z/git/EgoX")}',
+            f'/workspace/EgoX/{expected_ego_prior.relative_to("/home/shi3z/git/EgoX")}'
+        ]
+        run_command(move_cmd, job_id, 'ego_Prior移動')
+
         # Step 4: Prepare depth maps and meta.json
         update_job(job_id, current_step_num=4, current_step='Meta.json作成', step_progress=0)
 
