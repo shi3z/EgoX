@@ -211,20 +211,6 @@ python -c "from huggingface_hub import snapshot_download; snapshot_download(repo
 
 ## 🚀 Inference
 
-### Quick Start with Example Data
-
-For quick testing, the codebase includes example data in the `example/` directory. You can run inference immediately:
-
-```bash
-# For in-the-wild example
-bash scripts/infer_itw.sh
-
-# For Ego4D example
-bash scripts/infer_ego4d.sh
-```
-
-Edit the GPU ID and seed in the script if needed. Results will be saved to `./results/`.
-
 ### Custom Data Inference
 
 To run inference with your own data, prepare the following file structure:
