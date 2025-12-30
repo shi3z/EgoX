@@ -21,31 +21,7 @@
 
 ## 🆕 New Features (Fork by shi3z)
 
-### Ego Prior Generation Script
-
-The `generate_ego_prior.py` script automatically generates Ego Prior videos from exocentric videos using:
-- **Depth Anything V2** for depth estimation
-- 3D point cloud creation from depth maps
-- Automatic ego camera trajectory generation
-- Z-buffer rendering from the egocentric viewpoint
-
-```bash
-# Generate Ego Prior from your video
-python generate_ego_prior.py \
-    --exo_video ./your_video.mp4 \
-    --output_dir ./output/ \
-    --trajectory center_look \
-    --ego_depth 0.5 \
-    --device cuda
-```
-
-**Output files:**
-- `output/exo.mp4` - Resized exocentric video (784x448, 49 frames)
-- `output/ego_Prior.mp4` - Generated Ego Prior video (448x448, 49 frames)
-- `output/camera_params.json` - Camera intrinsic/extrinsic parameters
-- `output/depth_maps/` - Per-frame depth maps
-
-### Flask WebUI (Recommended)
+### Flask WebUI
 
 A Flask-based web interface with background worker processing and real-time progress tracking. This WebUI integrates **EgoX-EgoPriorRenderer** for high-quality Ego Prior generation using ViPE (Video Pose Engine).
 
