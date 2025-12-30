@@ -45,34 +45,117 @@ python generate_ego_prior.py \
 - `output/camera_params.json` - Camera intrinsic/extrinsic parameters
 - `output/depth_maps/` - Per-frame depth maps
 
-### WebUI
+### Flask WebUI (Recommended)
 
-A Gradio-based web interface for easy video conversion:
+A Flask-based web interface with background worker processing and real-time progress tracking. This WebUI integrates **EgoX-EgoPriorRenderer** for high-quality Ego Prior generation using ViPE (Video Pose Engine).
+
+#### Docker Setup (Required for NVIDIA Blackwell GPUs / GB10)
+
+For NVIDIA Blackwell architecture GPUs (sm_121, e.g., GB10), you must use the NGC 25.11 container:
 
 ```bash
-# 1. First, download the required models (see Model Weights Download section below)
+# 1. Clone the repository with submodules
+git clone --recursive https://github.com/shi3z/EgoX.git
+cd EgoX
 
-# 2. Start the WebUI
-python webui.py --host 0.0.0.0 --port 7860
+# 2. Start the Docker container
+docker compose up -d
 
-# Or use the startup script
-bash run_webui.sh
+# 3. Install dependencies inside the container
+docker exec -it egox-egox-webui-1 bash -c "
+  cd /workspace/EgoX && \
+  pip install flask diffusers==0.34.0 transformers accelerate sentencepiece peft imageio imageio-ffmpeg tyro ftfy opencv-python-headless wandb && \
+  apt-get update && apt-get install -y ffmpeg
+"
 
-# 3. Open in browser: http://localhost:7860
-#    (or http://<your-server-ip>:7860 for remote access)
+# 4. Install EgoX-EgoPriorRenderer dependencies
+docker exec -it egox-egox-webui-1 bash -c "
+  cd /workspace/EgoX/EgoX-EgoPriorRenderer && \
+  pip install -e .
+"
+
+# 5. Download model weights (see Model Weights Download section below)
+# Make sure models are in ./checkpoints/ directory
+
+# 6. Start the Flask WebUI (on host machine)
+python flask_webui.py
+
+# 7. Open in browser: http://localhost:7861
 ```
+
+#### docker-compose.yml Configuration
+
+```yaml
+services:
+  egox-webui:
+    image: nvcr.io/nvidia/pytorch:25.11-py3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "7860:7860"
+    volumes:
+      - .:/workspace/EgoX
+      - ~/.cache:/root/.cache
+    working_dir: /workspace/EgoX
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    command: sleep infinity  # Keep container running
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+```
+
+#### Processing Pipeline
+
+The Flask WebUI executes the following 5-step pipeline:
+
+1. **Video Preparation** - Extract frames, resize to 784x448, limit to 49 frames
+2. **ViPE Inference** - Depth estimation and camera pose extraction using ViPE
+3. **Ego Prior Rendering** - 3D point cloud rendering from egocentric viewpoint
+4. **Depth Conversion** - Convert ViPE depth maps to EgoX format
+5. **EgoX Inference** - Generate final egocentric video using Wan2.1-I2V-14B + LoRA
 
 **Features:**
 - Upload any exocentric (3rd person) video
-- Automatic Ego Prior generation using Depth Anything V2
-- Real-time progress display during inference
-- Customizable caption text for better results
-- Adjustable parameters (seed, GGA, scaling factor)
-- Accessible over network (VPN)
+- High-quality Ego Prior generation using EgoX-EgoPriorRenderer + ViPE
+- Background worker processing with real-time progress tracking
+- Job queue management with status monitoring
+- Customizable prompt text (auto-generated or manual)
+- Accessible over network
 
 **Processing Time:**
-- Ego Prior generation: ~1-2 minutes
+- ViPE + Ego Prior rendering: ~5-10 minutes
 - EgoX inference: ~30-40 minutes (50 diffusion steps)
+
+#### Output Structure
+
+```
+webui_output/
+└── <job-uuid>/
+    ├── exo.mp4              # Resized input video (784x448, 49 frames)
+    ├── prompt.txt           # Scene description prompt
+    ├── vipe_results/        # ViPE depth maps and camera poses
+    ├── videos/
+    │   └── ego_Prior.mp4    # Generated Ego Prior video
+    ├── depth_maps/          # Converted depth maps for EgoX
+    └── results/
+        └── EgoX.mp4         # Final egocentric video output
+```
+
+### Legacy Gradio WebUI
+
+A simpler Gradio-based interface (uses Depth Anything V2 instead of ViPE):
+
+```bash
+python webui.py --host 0.0.0.0 --port 7860
+```
 
 ---
 

@@ -17,11 +17,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-    command: >
-      bash -c "
-        pip install -q gradio diffusers==0.34.0 transformers accelerate sentencepiece peft imageio imageio-ffmpeg tyro ftfy opencv-python-headless wandb &&
-        python webui.py --host 0.0.0.0 --port 7860
-      "
+    command: sleep infinity  # Keep container running for flask_webui.py
     ipc: host
     ulimits:
       memlock: -1
